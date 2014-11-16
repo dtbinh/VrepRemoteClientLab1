@@ -1,0 +1,32 @@
+# turn right if there is an obstacle on the left side
+obstacleFront
+    foreach
+	env.dist(Left, $distObsVal) # get distance to the left obstacle
+	check $distObsVal < 0.25    # check if it is within the safety range
+    assert
+	env.detected(Obstacle_)          # assert action
+
+obstacleActionLeft
+    foreach
+	env.detected(Obstacle_) # get distance to the left obstacle
+	env.dist(Left, $distObsVal) # get distance to the left obstacle
+	check $distObsVal < 0.25    # check if it is within the safety range
+    assert
+	env.action( 1, -1)          # assert action
+
+# turn left if there is an obstacle on the right side
+obstacleActionRight
+    foreach
+	env.dist(Right, $distObsVal)
+	check $distObsVal < 0.25
+    assert
+	env.action( -1, 1)
+
+# if there are no obstacles, march forward
+noObstacle
+    foreach
+	env.dist(Left, $dist1)      # get distance to the left obstacle
+	env.dist(Right, $dist2)     # get distance to the right obstacle
+	check $dist1 >= 0.25 and $dist2 >= 0.25 # check nothing is within range
+    assert
+	env.action(1,1)             # assert action

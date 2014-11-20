@@ -1,32 +1,115 @@
-# turn right if there is an obstacle on the left side
-obstacleFront
+obstacle1
     foreach
-	env.dist(Left, $distObsVal) # get distance to the left obstacle
-	check $distObsVal < 0.25    # check if it is within the safety range
+        env.dist(1,$distance)
+        check $distance<0.5
     assert
-	env.detected(Obstacle_)          # assert action
+        env.action(0.2,0,1)
 
-obstacleActionLeft
+obstacle2
     foreach
-	env.detected(Obstacle_) # get distance to the left obstacle
-	env.dist(Left, $distObsVal) # get distance to the left obstacle
-	check $distObsVal < 0.25    # check if it is within the safety range
+        env.dist(2,$distance)
+        check $distance<0.40
     assert
-	env.action( 1, -1)          # assert action
+        env.action(1.25,1,2)
 
-# turn left if there is an obstacle on the right side
-obstacleActionRight
+obstacle3
     foreach
-	env.dist(Right, $distObsVal)
-	check $distObsVal < 0.25
+        env.dist(3,$distance)
+        check $distance<0.5
     assert
-	env.action( -1, 1)
+        env.action(0,-0.5,3)
 
-# if there are no obstacles, march forward
-noObstacle
+obstacle4
     foreach
-	env.dist(Left, $dist1)      # get distance to the left obstacle
-	env.dist(Right, $dist2)     # get distance to the right obstacle
-	check $dist1 >= 0.25 and $dist2 >= 0.25 # check nothing is within range
+        env.dist(4,$distance)
+        check $distance<0.5
     assert
-	env.action(1,1)             # assert action
+        env.action(-2,-2.5,4)
+
+obstacle5
+    foreach
+        env.dist(5,$distance)
+        check $distance<0.5
+    assert
+        env.action(-2.5,-2  ,5)
+
+obstacle6
+    foreach
+        env.dist(6,$distance)
+        check $distance<0.5
+    assert
+        env.action(-0.5,0,6)
+
+obstacle7
+    foreach
+        env.dist(7,$distance)
+        check $distance<0.4
+    assert
+        env.action(1,1.25,7)
+
+obstacle8
+    foreach
+        env.dist(8,$distance)
+        check $distance<0.5
+    assert
+        env.action(0.2,0.5,8)
+
+obstacle9
+    foreach
+        env.dist(9,$distance)
+        check $distance<0.25
+    assert
+        env.action(0,0.2,9)
+
+obstacle10
+    foreach
+        env.dist(10,$distance)
+        check $distance<0.25
+    assert
+        env.action(0.5,1,10)
+
+obstacle11
+    foreach
+        env.dist(11,$distance)
+        check $distance<0.25
+    assert
+        env.action(1,1.25,11)
+
+obstacle12
+    foreach
+        env.dist(12,$distance)
+        check $distance<0.25
+    assert
+        env.action(1,1.5,12)
+
+
+obstacle13
+    foreach
+        env.dist(13,$distance)
+        check $distance<0.25
+    assert
+        env.action(1.5,1,13)
+
+
+obstacle14
+    foreach
+        env.dist(14,$distance)
+        check $distance<0.25
+    assert
+        env.action(1.25,1,14)
+
+obstacle15
+    foreach
+        env.dist(15,$distance)
+        check $distance<0.25
+    assert
+        env.action(1,0.5,15)
+
+obstacle16
+    foreach
+        env.dist(16,$distance)
+        check $distance<0.25
+    assert
+        env.action(0.2,0,16)
+
+

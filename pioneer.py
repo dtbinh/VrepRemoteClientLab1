@@ -20,41 +20,6 @@ def getObstacleDist(sensorHandler_):
     distance_ = math.sqrt(rawSR[2][0]*rawSR[2][0] + rawSR[2][1]*rawSR[2][1] + rawSR[2][2]*rawSR[2][2])
     return distance_
 
-def getObstacleVectorDist(sensorHandler_):
-    dist2Obstacle_LR = [0.0, 0.0]
-    # Get raw sensor readings using API
-    rawSR = vrep.simxReadProximitySensor(clientID, sensorHandler_, vrep.simx_opmode_oneshot_wait)
-    if(rawSR[1]):
-        return rawSR[2]
-    else:
-        return None
-
-# agent's reasoning procedure, using IF-THEN rules
-def getMotorSpeed(dist):
-    if (dist[0] < 0.4) or (dist[1] < 0.4): #Obstacle found
-        if(dist[0]< 0.1 or dist[1]<0.1): #Obstacle close
-            if(dist[6]>0.2 and dist[7]>0.2):# there is space to go back
-                motorSpeed =  dict(speedLeft=-3, speedRight=-3)
-            elif(dist[5]<dist[4]): #space on the left
-                 motorSpeed =  dict(speedLeft=0, speedRight=1)
-            elif(dist[5]>=dist[4]):# space on the right
-                 motorSpeed =  dict(speedLeft=1, speedRight=0)
-        elif (dist[2]<dist[3] or dist[5]>1):#obstacle not close, a lot of space on the right
-            motorSpeed =  dict(speedLeft=2, speedRight=0)
-        elif(dist[2]>dist[3] or dist[4]>1):#obstacle not close, a lot of space on the left
-            motorSpeed= dict(speedLeft=0, speedRight=2)
-        elif(dist[2] <0.4 and dist[3] <0.4): #front-sides obstacle
-            if(dist[4]<dist[5]): #more space in left
-                motorSpeed =  dict(speedLeft=0, speedRight=2)
-            else: #more space in right
-                motorSpeed= dict(speedLeft=2, speedRight=0)
-        else: #go on
-                motorSpeed =  dict(speedLeft=1, speedRight=1)
-
-    else: #go on
-        motorSpeed= dict(speedLeft=3, speedRight=3)
-    return motorSpeed
-
 def calculateObstacleField(distVector):
     resultVector=[0,0,0]
     for distance in distVector:
@@ -64,36 +29,6 @@ def calculateObstacleField(distVector):
             resultVector[1]-=1/(distance[1]*1000)
             resultVector[2]-=1/(distance[2]*1000)
     return resultVector
-
-
-def getMotorSpeedToPlant(distVector, pos2Plant):
-    finalField=[0,0,0]
-    potentialFieldObstacle=calculateObstacleField(distVector)
-    potentialFieldPlant=pos2Plant[1]
-    print 'Obstacle'
-    print potentialFieldObstacle
-    print 'Plant'
-    print potentialFieldPlant
-    finalField[0]=potentialFieldObstacle[0]+potentialFieldPlant[0]
-    finalField[1]=potentialFieldObstacle[1]+potentialFieldPlant[1]
-    finalField[2]=potentialFieldObstacle[2]+potentialFieldPlant[2]
-    isCorrectOrientation(finalField)
-
-    return dict(speedLeft=finalField[0], speedRight=finalField[1])
-
-def isCorrectOrientation(field):
-    error,currentOrientationEuler=vrep.simxGetObjectOrientation(clientID,pioneerRobotHandle,-1,vrep.simx_opmode_oneshot_wait)
-    print '=========Euler=========='
-    print currentOrientationEuler
-    currentOrientationVector=[0,0]
-    if(currentOrientationEuler[0]<0):
-        currentOrientationVector[0]=math.sin(currentOrientationEuler[1])
-        currentOrientationVector[1]=math.cos(currentOrientationEuler[1])
-    else:
-        currentOrientationVector[0]=math.sin(currentOrientationEuler[1])
-        currentOrientationVector[1]=-math.cos(currentOrientationEuler[1])
-    print '=========Vector=========='
-    print currentOrientationVector
 
 # def getMotorSpeed(dist):
 #      if (dist[0] < 0.5) or (dist[1] < 0.5):
@@ -172,7 +107,8 @@ if clientID != -1:
         ret_sr,  ultraSonicSensorBackLeft = vrep.simxGetObjectHandle(clientID, 'Pioneer_p3dx_ultrasonicSensor' + str(14),vrep.simx_opmode_oneshot_wait)
         ret_sr,  ultraSonicSensorBackRight = vrep.simxGetObjectHandle(clientID, 'Pioneer_p3dx_ultrasonicSensor' + str(10),vrep.simx_opmode_oneshot_wait)
 
-        sensorHandleList=[vrep.simxGetObjectHandle(clientID, 'Pioneer_p3dx_ultrasonicSensor' + str(sensorNumber),vrep.simx_opmode_oneshot_wait)[1] for sensorNumber in range(1,17) ]
+        sensorHandleList=[(sensorNumber,vrep.simxGetObjectHandle(clientID, 'Pioneer_p3dx_ultrasonicSensor' + str(sensorNumber),vrep.simx_opmode_oneshot_wait)[1]) for sensorNumber in range(1,17) ]
+        error,currentOrientationEuler=vrep.simxGetObjectOrientation(clientID,pioneerRobotHandle,-1,vrep.simx_opmode_streaming)
         while True: # main Control loop
 
             #################################################
@@ -181,19 +117,10 @@ if clientID != -1:
 
             # distance to plant
             pos2Plant = vrep.simxGetObjectPosition(clientID, pioneerRobotHandle, indoorPlantHandle, vrep.simx_opmode_oneshot_wait)
-            orientation=vrep.simxGetObjectGroupData(clientID,pioneerRobotHandle,7,vrep.simx_opmode_oneshot)
             movePlant()
 
             # distance to obstacle, return [distLeft, distRight]
-            dist2Obstacle_LR = [getObstacleDist(ultraSonicSensorStraightLeft),
-                                getObstacleDist(ultraSonicSensorStraightRight),
-                                getObstacleDist(ultraSonicSensorAngleLeft),
-                                getObstacleDist(ultraSonicSensorAngleRight),
-                                getObstacleDist(ultraSonicSensorLeft),
-                                getObstacleDist(ultraSonicSensorRight),
-                                getObstacleDist(ultraSonicSensorBackLeft),
-                                getObstacleDist(ultraSonicSensorBackRight)]
-            dist2ObstacleVector = [getObstacleVectorDist(sensor) for sensor in sensorHandleList]
+            dist2Obstacle= [(sensorNumber,getObstacleDist(sensor)) for sensorNumber,sensor in sensorHandleList]
 
             ########################################
             # Reasoning: figure out which action to take
@@ -201,9 +128,10 @@ if clientID != -1:
 
             # get motor speed using IF-THEN rule
             #motorSpeed = getMotorSpeed(dist2Obstacle_LR)
+            print pos2Plant
             # get motor speed using PyKE
-            #motorSpeed = getMotorSpeedPyKE(dist2Obstacle_LR)
-            motorSpeed=getMotorSpeedToPlant(dist2ObstacleVector,pos2Plant)
+            #motorSpeed = getMotorSpeedPyKE(dist2Obstacle)
+            #motorSpeed=getMotorSpeedToPlant(dist2ObstacleVector,pos2Plant)
             ########################################
             # Action Phase: Assign speed to wheels
             ########################################
